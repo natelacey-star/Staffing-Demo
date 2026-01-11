@@ -2,16 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MetricCard from './MetricCard';
 import { 
-  sampleResumeData, screeningQuestions, candidateProfile, interviewKit, 
-  emailTemplate, talentPoolCandidates 
+  sampleResumeData, screeningQuestions, candidateProfile, 
+  emailTemplate
 } from '../data/mockData';
 import { parseResume, ParsedResume } from '../utils/resumeParser';
 import { qualifyCandidate, QualificationResult } from '../utils/qualificationEngine';
 import { generateJobQualifications, JobQualifications } from '../utils/jobQualificationGenerator';
 import { 
-  Upload, FileText, CheckCircle2, AlertCircle, ArrowRight, Clock, Users, XCircle, 
+  Upload, FileText, CheckCircle2, AlertCircle, ArrowRight, Clock, XCircle, 
   Loader2, Calendar, ClipboardCheck, Search, TrendingUp, DollarSign, Target, 
-  ArrowLeft, ArrowDown, Mail, User, MapPin, Briefcase, Award, ChevronDown, ChevronRight
+  ArrowLeft, ArrowDown, Mail, MapPin, Briefcase, ChevronRight
 } from 'lucide-react';
 
 type WorkflowStep = 
@@ -45,6 +45,15 @@ export default function WorkflowDemo() {
   const [expandedAccordion, setExpandedAccordion] = useState<string>('resume-questions');
   
   const stepRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  // Helper functions to avoid TypeScript type narrowing issues
+  const isStepComplete = (step: ScreeningStep): step is 'complete' => step === 'complete';
+  const isStepCalculating = (step: ScreeningStep): step is 'calculating' => step === 'calculating';
+  const isStepGenerating = (step: ScreeningStep): step is 'generating' => step === 'generating';
+  const isStepAfterGenerating = (step: ScreeningStep): boolean => 
+    step === 'calculating' || step === 'complete';
+  const isStepAfterExtracting = (step: ScreeningStep): boolean => 
+    step === 'generating' || step === 'calculating' || step === 'complete';
 
   const workflowSteps = [
     { id: 'apply', label: 'Candidate Applies', number: 1 },
@@ -334,7 +343,7 @@ export default function WorkflowDemo() {
       <div className="hidden lg:block fixed left-8 top-1/2 -translate-y-1/2 z-40">
         <div className="bg-white rounded-lg shadow-lg p-4 border border-gray-200">
           <div className="space-y-4">
-            {workflowSteps.map((step, idx) => (
+            {workflowSteps.map((step) => (
               <button
                 key={step.id}
                 onClick={() => scrollToStep(step.id as WorkflowStep)}
@@ -721,31 +730,47 @@ export default function WorkflowDemo() {
                   </div>
 
                   {/* Generating Questions */}
-                  <div className={`transition-opacity duration-300 ${screeningStep === 'generating' ? 'opacity-100' : screeningStep === 'calculating' || screeningStep === 'complete' ? 'opacity-100' : 'opacity-50'}`}>
+                  <div className={`transition-opacity duration-300 ${
+                    isStepAfterExtracting(screeningStep)
+                      ? 'opacity-100' 
+                      : 'opacity-50'
+                  }`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium text-gray-900">Generating screening questions...</span>
-                      {(screeningStep === 'generating' && currentProgress >= 100) || screeningStep === 'calculating' || screeningStep === 'complete' ? (
+                      {(isStepGenerating(screeningStep) && currentProgress >= 100) || isStepAfterGenerating(screeningStep) ? (
                         <CheckCircle2 className="w-5 h-5 text-green-600" />
                       ) : null}
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">
                       <div
                         className="gradient-bg h-3 rounded-full transition-all duration-300"
-                        style={{ width: `${screeningStep === 'generating' ? currentProgress : screeningStep === 'calculating' || screeningStep === 'complete' ? 100 : 0}%` }}
+                        style={{ 
+                          width: isStepGenerating(screeningStep)
+                            ? `${currentProgress}%` 
+                            : (isStepAfterGenerating(screeningStep) ? '100%' : '0%')
+                        }}
                       />
                     </div>
                   </div>
 
                   {/* Calculating */}
-                  <div className={`transition-opacity duration-300 ${screeningStep === 'calculating' ? 'opacity-100' : screeningStep === 'complete' ? 'opacity-100' : 'opacity-50'}`}>
+                  <div className={`transition-opacity duration-300 ${
+                    isStepAfterGenerating(screeningStep)
+                      ? 'opacity-100' 
+                      : 'opacity-50'
+                  }`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium text-gray-900">Calculating overall fit...</span>
-                      {screeningStep === 'complete' && <CheckCircle2 className="w-5 h-5 text-green-600" />}
+                      {isStepComplete(screeningStep) && <CheckCircle2 className="w-5 h-5 text-green-600" />}
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">
                       <div
                         className="gradient-bg h-3 rounded-full transition-all duration-300"
-                        style={{ width: `${screeningStep === 'calculating' ? currentProgress : screeningStep === 'complete' ? 100 : 0}%` }}
+                        style={{ 
+                          width: isStepCalculating(screeningStep)
+                            ? `${currentProgress}%` 
+                            : (isStepComplete(screeningStep) ? '100%' : '0%')
+                        }}
                       />
                     </div>
                   </div>

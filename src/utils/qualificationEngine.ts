@@ -205,13 +205,11 @@ export function qualifyCandidate(resume: ParsedResume, jobQualifications?: JobQu
   // Check title relevance (max 15 points - increased from 10)
   let titlePoints = 0;
   let titleDetails: string[] = [];
-  let titleMatch = false;
   let matchedKeywords: string[] = [];
   
   for (const keyword of requirements.requiredTitleKeywords) {
     const keywordLower = keyword.toLowerCase();
     if (resumeTitle.includes(keywordLower) || resumeText.includes(keywordLower)) {
-      titleMatch = true;
       matchedKeywords.push(keyword);
     }
   }
